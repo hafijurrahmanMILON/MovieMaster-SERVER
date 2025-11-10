@@ -23,10 +23,24 @@ async function run() {
     await client.connect();
     const moviesDB = client.db("movieMasterDB");
     const movieCollection = moviesDB.collection("movies");
-
+    const userCollection = moviesDB.collection("users");
+    // movies api ----------------------------------------
     app.get("/featured-movies", async (req, res) => {
       const result = await movieCollection.find().toArray();
       res.send(result);
+    });
+
+    // users api -----------------------------------------
+    app.post("/add-user", async (req, res) => {
+      const newUser = req.body;
+      const email = req.body.email;
+      const existingUser = await userCollection.findOne({ email: email });
+      if (existingUser) {
+        res.send({ message: "user already exist" });
+      } else {
+        const result = await userCollection.insertOne(newUser);
+        res.send(result);
+      }
     });
 
     await client.db("admin").command({ ping: 1 });

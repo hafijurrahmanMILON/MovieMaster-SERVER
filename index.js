@@ -84,6 +84,18 @@ async function run() {
       res.send(result);
     });
 
+    // update-movie --
+    app.put('/movies/update/:id', async (req, res) => {
+      const id = req.params.id
+      const body = req.body
+      const filter = { _id: new ObjectId(id) }
+      const update = {
+        $set: body
+      }
+      const result = await movieCollection.updateOne(filter,update)
+    res.send(result)
+    });
+
     // users api -----------------------------------------
     app.post("/add-user", async (req, res) => {
       const newUser = req.body;

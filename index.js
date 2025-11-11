@@ -77,6 +77,13 @@ async function run() {
       res.send(result);
     });
 
+    // add-movie --
+    app.post("/movies/add", async (req, res) => {
+      const newMovie = req.body;
+      const result = await movieCollection.insertOne(newMovie);
+      res.send(result);
+    });
+
     // users api -----------------------------------------
     app.post("/add-user", async (req, res) => {
       const newUser = req.body;

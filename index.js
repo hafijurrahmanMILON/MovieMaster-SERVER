@@ -1,6 +1,6 @@
 const express = require("express");
 const cors = require("cors");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const app = express();
 const port = process.env.PORT || 3000;
 require("dotenv").config();
@@ -68,6 +68,13 @@ async function run() {
         ])
         .toArray();
       res.send(result[0]);
+    });
+
+    // movie details --
+    app.get("/movies/:id", async (req, res) => {
+      const id = req.params.id;
+      const result = await movieCollection.findOne({ _id: new ObjectId(id) });
+      res.send(result);
     });
 
     // users api -----------------------------------------

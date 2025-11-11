@@ -85,15 +85,22 @@ async function run() {
     });
 
     // update-movie --
-    app.put('/movies/update/:id', async (req, res) => {
-      const id = req.params.id
-      const body = req.body
-      const filter = { _id: new ObjectId(id) }
+    app.put("/movies/update/:id", async (req, res) => {
+      const id = req.params.id;
+      const body = req.body;
+      const filter = { _id: new ObjectId(id) };
       const update = {
-        $set: body
-      }
-      const result = await movieCollection.updateOne(filter,update)
-    res.send(result)
+        $set: body,
+      };
+      const result = await movieCollection.updateOne(filter, update);
+      res.send(result);
+    });
+
+    // delete movie --
+    app.delete("/movies/delete/:id", async (req, res) => {
+      const id = req.params.id;
+      const result = await movieCollection.deleteOne({ _id: new ObjectId(id) });
+      res.send(result);
     });
 
     // users api -----------------------------------------

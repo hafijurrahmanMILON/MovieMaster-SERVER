@@ -27,7 +27,7 @@ async function run() {
     // movies api ----------------------------------------
     // featured movie --
     app.get("/featured-movies", async (req, res) => {
-      const result = await movieCollection.find().toArray();
+      const result = await movieCollection.find().sort({created_at:-1}).toArray();
       res.send(result);
     });
 
@@ -68,6 +68,14 @@ async function run() {
         ])
         .toArray();
       res.send(result[0]);
+    });
+
+    // my-collection --
+    app.get("/movies/my-collection", async (req, res) => {
+      const email = req.query.email;
+      const filter = { addedBy: email };
+      const result = await movieCollection.find(filter).toArray();
+      res.send(result);
     });
 
     // movie details --

@@ -20,7 +20,7 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
-    await client.connect();
+    // await client.connect();
     const moviesDB = client.db("movieMasterDB");
     const movieCollection = moviesDB.collection("movies");
     const userCollection = moviesDB.collection("users");
@@ -111,6 +111,15 @@ async function run() {
       res.send(result);
     });
 
+    // movies by genre --
+
+    app.get('/movies-by-genre', async (req, res) => {
+      const genres = req.query.genres.split(',')
+      console.log(genres)
+      const result = await movieCollection.find({ genre: { $in: genres } }).toArray()
+    res.send(result)
+    });
+
     // users api -----------------------------------------
     app.post("/add-user", async (req, res) => {
       const newUser = req.body;
@@ -129,7 +138,7 @@ async function run() {
       res.send(result);
     });
 
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });
   } finally {
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"

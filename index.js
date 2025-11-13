@@ -23,11 +23,15 @@ async function run() {
     // await client.connect();
     const moviesDB = client.db("movieMasterDB");
     const movieCollection = moviesDB.collection("movies");
+    const watchlistCollection = moviesDB.collection("watchlist");
     const userCollection = moviesDB.collection("users");
     // movies api ----------------------------------------
     // featured movie --
     app.get("/featured-movies", async (req, res) => {
-      const result = await movieCollection.find().sort({created_at:-1}).toArray();
+      const result = await movieCollection
+        .find()
+        .sort({ created_at: -1 })
+        .toArray();
       res.send(result);
     });
 
@@ -113,11 +117,80 @@ async function run() {
 
     // movies by genre --
 
-    app.get('/movies-by-genre', async (req, res) => {
-      const genres = req.query.genres.split(',')
-      console.log(genres)
-      const result = await movieCollection.find({ genre: { $in: genres } }).toArray()
-    res.send(result)
+    app.get("/movies-by-genre", async (req, res) => {
+      const genres = req.query.genres.split(",");
+      // console.log(genres);
+      const result = await movieCollection
+        .find({ genre: { $in: genres } })
+        .toArray();
+      res.send(result);
+    });
+
+    // movie by rating --
+
+    app.get("/movies-by-rating", async (req, res) => {
+      const max = Number(req.query.maxRating) || 10;
+      const min = Number(req.query.minRating) || 0;
+      // console.log(max, min);
+      const filter = { rating: { $lte: max, $gte: min } };
+      const result = await movieCollection.find(filter).toArray();
+      res.send(result);
+    });
+
+    // watchList api -------------------------------------
+
+    // post --
+    app.post("/watchList/add", async (req, res) => {
+      const body = req.body;
+      // console.log(body);
+      const movieId = req.body.movieId;
+      const email = req.body.user_email;
+      const existing = await watchlistCollection.findOne({
+        movieId: movieId,
+        user_email: email,
+      });
+      if (existing) {
+        return res.status(400).send({ message: "Already in watchlist" });
+      } else {
+        const result = await watchlistCollection.insertOne(body);
+        res.send(result);
+      }
+    });
+
+    //  check existing --
+    app.get("/watchList/check", async (req, res) => {
+      const movieId = req.query.movie;
+      const email = req.query.email;
+      // console.log(req.query);
+      const existing = await watchlistCollection.findOne({
+        movieId: movieId,
+        user_email: email,
+      });
+      if (existing) {
+        res.send(true);
+      } else {
+        res.send(false);
+      }
+    });
+
+    // watchList by email --
+
+    app.get("/watchList/myWatchList", async (req, res) => {
+      const email = req.query.email;
+      const result = await watchlistCollection
+        .find({ user_email: email })
+        .toArray();
+      res.send(result);
+    });
+
+    // delete one --
+    app.delete("/watchList/delete", async (req, res) => {
+      const id = req.query.id;
+      // console.log(id);
+      const result = await watchlistCollection.deleteOne({
+        _id: new ObjectId(id),
+      });
+      res.send(result);
     });
 
     // users api -----------------------------------------
@@ -154,5 +227,3 @@ app.get("/", async (req, res) => {
 app.listen(port, () => {
   console.log(`port:${port}`);
 });
-
-// console.log(process.env.DB_USER, process.env.DB_PASSWORD);

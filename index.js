@@ -92,8 +92,14 @@ async function run() {
     // add-movie --
     app.post("/movies/add", async (req, res) => {
       const newMovie = req.body;
-      const result = await movieCollection.insertOne(newMovie);
-      res.send(result);
+      const title = req.body.title;
+      const existing = await movieCollection.findOne({ title: title });
+      if (existing) {
+       return res.status(400).send({ message: "Movie already exist" });
+      } else {
+        const result = await movieCollection.insertOne(newMovie);
+        res.send(result);
+      }
     });
 
     // update-movie --
@@ -199,7 +205,7 @@ async function run() {
       const email = req.body.email;
       const existingUser = await userCollection.findOne({ email: email });
       if (existingUser) {
-        res.send({ message: "user already exist" });
+       return res.send({ message: "user already exist" });
       } else {
         const result = await userCollection.insertOne(newUser);
         res.send(result);

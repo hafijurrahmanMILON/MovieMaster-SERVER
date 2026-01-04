@@ -25,6 +25,91 @@ async function run() {
     const movieCollection = moviesDB.collection("movies");
     const watchlistCollection = moviesDB.collection("watchlist");
     const userCollection = moviesDB.collection("users");
+
+    app.get("/dashboard/overview", async (req, res) => {
+      try {
+        const email = req.query.email;
+        if (!email)
+          return res.status(400).send({ message: "email is required" });
+
+        const totalMovies = await movieCollection.countDocuments({
+          addedBy: email,
+        });
+
+        const avgAgg = await movieCollection
+          .aggregate([
+            { $match: { addedBy: email } },
+            { $group: { _id: null, avgRating: { $avg: "$rating" } } },
+          ])
+          .toArray();
+
+        const avgRating = avgAgg[0]?.avgRating || 0;
+
+        const watchlistCount = await watchlistCollection.countDocuments({
+          user_email: email,
+        });
+
+        const monthlyMovies = await movieCollection
+          .aggregate([
+            { $match: { addedBy: email } },
+            {
+              $addFields: {
+                createdDate: {
+                  $cond: [
+                    { $eq: [{ $type: "$created_at" }, "date"] },
+                    "$created_at",
+                    { $toDate: "$created_at" },
+                  ],
+                },
+              },
+            },
+            {
+              $group: {
+                _id: {
+                  y: { $year: "$createdDate" },
+                  m: { $month: "$createdDate" },
+                },
+                count: { $sum: 1 },
+              },
+            },
+            { $sort: { "_id.y": 1, "_id.m": 1 } },
+            {
+              $project: {
+                _id: 0,
+                month: {
+                  $concat: [
+                    { $toString: "$_id.y" },
+                    "-",
+                    {
+                      $cond: [
+                        { $lt: ["$_id.m", 10] },
+                        { $concat: ["0", { $toString: "$_id.m" }] },
+                        { $toString: "$_id.m" },
+                      ],
+                    },
+                  ],
+                },
+                count: 1,
+              },
+            },
+          ])
+          .toArray();
+
+        const last6 = monthlyMovies.slice(-6);
+
+        res.send({
+          cards: {
+            totalMovies,
+            avgRating: Number(avgRating.toFixed(2)),
+            watchlistCount,
+          },
+          chart: last6,
+        });
+      } catch (err) {
+        res.status(500).send({ message: "server error", error: err.message });
+      }
+    });
+
     // movies api ----------------------------------------
     // featured movie --
     app.get("/featured-movies", async (req, res) => {
@@ -95,7 +180,7 @@ async function run() {
       const title = req.body.title;
       const existing = await movieCollection.findOne({ title: title });
       if (existing) {
-       return res.status(400).send({ message: "Movie already exist" });
+        return res.status(400).send({ message: "Movie already exist" });
       } else {
         const result = await movieCollection.insertOne(newMovie);
         res.send(result);
@@ -205,7 +290,7 @@ async function run() {
       const email = req.body.email;
       const existingUser = await userCollection.findOne({ email: email });
       if (existingUser) {
-       return res.send({ message: "user already exist" });
+        return res.send({ message: "user already exist" });
       } else {
         const result = await userCollection.insertOne(newUser);
         res.send(result);
